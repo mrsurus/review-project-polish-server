@@ -60,6 +60,7 @@ async function run(){
             const token = jwt.sign(user, process.env.ACCESS_TOKEN, {expiresIn: '30d'})
             res.send({token})
         })
+        
 
         app.get('/review', async(req, res)=>{
             const email = req.query.email
