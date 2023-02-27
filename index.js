@@ -18,67 +18,76 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 function verifyJwt(req, res, next) {
     const authHeader = req.headers.authorization
+    console.log(authHeader);
     if (!authHeader) {
-        return res.status(401).send({ message: 'unauthorized access' })
+        return res.status(401).send({ message: 'unauthorized access from authheader' })
     }
     const token = authHeader.split(' ')[1]
-    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+    jwt.verify(token, process.env.ACCESS_TOKEN , function (err, decoded) {
         if (err) {
-            return res.status(401).send({ message: 'unauthorixed access' })
+            return res.status(401).send({ message: 'unauthorixed access from token' })
         }
         req.decoded = decoded;
         next()
     })
 }
 
-async function run(){
-    try{
+async function run() {
+    try {
         const serviceCollection = client.db('reviewPolish').collection('services')
         const reviewCollection = client.db('reviewPolish').collection('review')
 
-        app.get('/services', async(req, res) =>{
+        app.get('/services', async (req, res) => {
             const query = {}
             const result = await serviceCollection.find(query).toArray()
             res.send(result)
         })
 
-        app.get('/services/:id', async(req, res) =>{
+        app.get('/services/:id', async (req, res) => {
             const id = req.params.id
-            const query = {_id:new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await serviceCollection.findOne(query)
             res.send(result)
         })
 
-        app.post('/review', async(req, res )=>{
-            const  data = req.body
+        app.post('/review', async (req, res) => {
+            const data = req.body
             const result = await reviewCollection.insertOne(data)
             res.send(result)
         })
 
-        app.post('/jwt', async(req, res)=> {
+        app.post('/jwt', async (req, res) => {
             const user = req.body
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN, {expiresIn: '30d'})
-            res.send({token})
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '30d' })
+            res.send({ token })
         })
-        
 
-        app.get('/review', async(req, res)=>{
-            const email = req.query.email
-            const query = {reviewerEmail: email}
+
+        app.get('/review',verifyJwt,  async (req, res) => {
+            const decoded = req.decoded
+            if (decoded.email !== req.query.email) {
+                return res.status(401).send({ message: 'unauthorized access' })
+            }
+            let query = {}
+            if (req.query.email) {
+                query = { reviewerEmail: req.query.email }
+            }
+            // const email = req.query.email
+            // const query = {reviewerEmail: email}
             const result = await reviewCollection.find(query).toArray()
             res.send(result)
         })
 
-        app.get('/review/:id', async(req, res )=>{
+        app.get('/review/:id', async (req, res) => {
             const id = req.params.id
-            const  query = {foodId: id}
+            const query = { foodId: id }
             const result = await reviewCollection.find(query).toArray()
             res.send(result)
         })
 
-        app.get('/reviews/:id', async(req, res )=>{
+        app.get('/reviews/:id', async (req, res) => {
             const id = req.params.id
-            const  query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await reviewCollection.findOne(query)
             res.send(result)
         })
@@ -89,7 +98,7 @@ async function run(){
             res.send(result)
         })
 
-        app.post('/services', async(req, res)=>{
+        app.post('/services', async (req, res) => {
             const data = req.body
             const result = await serviceCollection.insertOne(data)
             res.send(result)
@@ -97,7 +106,7 @@ async function run(){
 
         app.put('/review/:id', async (req, res) => {
             const id = req.params.id;
-            const filter = { _id:new ObjectId(id) }
+            const filter = { _id: new ObjectId(id) }
             const data = req.body
             const option = { upsert: true }
             const updatedReview = {
@@ -111,7 +120,7 @@ async function run(){
 
 
     }
-    finally{
+    finally {
 
     }
 }
